@@ -29,7 +29,7 @@ void setup()
     Serial.begin(115200); // starts the serial monitor at a specified baude rate which must match the cpu's baud rate.
     while (!Serial)
     {
-    }                                                      // while there is no data nothing happens
+    } // while there is no data nothing happens
     Serial.println(F("\n--- RPM over CAN: Starting ---")); // the first output message on the serial monitor to show once data comes in
 }
 
@@ -51,3 +51,24 @@ else
 }
 CAN.setMode(MCP_NORMAL); // sets MCP2515 into normal operation mode so it can send and receive can FRAMES on the bus.
 delay(10);               // Once MCP2515 begins it gives it a tiny pause to adjust before sending and receiving messages.Also this delay is in the code but it not considered blocking as it only runs once during the setup and not in the main loop.
+
+pinMode(MCP2515_INT, INPUT);                                           // sets the interrupt wire on mcp2515 to input and not input pull up because of two different power sources, the hall sensor is attached to arduino while mcp2515 is powered by the mcp which is set to high automatically and does not rely on the arduinos intermal resitor to be pulled up
+attachInterrupt(digitalPinToInterrupt(MCP2515_INT), MCP_ISR, FALLING); // attaches an interrupt to a pin , in this case mcp2515_INT pin , then digitalPinToInterrupt converts the pin number to an internal interrupt number because attachInterrupt expects an interrupt number not a raw pin.
+Serial.println(F("MCP2515 interrupt attached on D3"));                 // Message showing successful attachment of interupt to pin.
+
+lastSampleTime = millis();  // returns the number of milliseconds since the arduino started running and acts as reference point for calculating the elapsed time between rpm samples.
+lastPulseCountSnapshot = 0; // stores how many pulses have occured at the last check
+}
+
+void loop()
+{
+    unsigned long now = millis(); // stores the current time in milliseconds
+
+    if (now - lastSampleTime >= RPM_SAMPLE_MS)
+    {                                      // if this calculation is true then we  trigger the following line
+        noInterrupts();                    // if the above is true then we turn off all interrupts to avoid updates of pulseCount mid read.
+        unsigned long pulses = pulseCount; // we make a local copy of pulseCount called pulses and we use it for subsequent rpm calculations this is done for code safety in order to prevent race conditions as we could also just use pulseCount itself, but this is best practice.
+        pulseCount = 0;                    // we then reset pulse count to 0 until a new value comes in
+        interrupts();                      // we turn interrupts back on
+    }
+}
