@@ -72,3 +72,7 @@ void loop()
         interrupts();                      // we turn interrupts back on
     }
 }
+
+float seconds = RRM_SAMPLE_MS / 1000.0f;                          // uses fixed matfloat seconds = RPM_SAMPLE_MS / 1000.0f; we declare the type as a float to get a float result and the calculation as float via 0.f to ensure float cacluation, both must be used together to get a float result.
+float revsPerSecond = (float)pulses / (seconds * PULSES_PER_REV); // convert sample time from milliseconds to seconds for rpm calculation
+float rpm = revsPerSecond * 60.0f;                                // calculate revolutions per minute by multiplying revolutions per second by 60;
