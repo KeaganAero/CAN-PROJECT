@@ -7,6 +7,8 @@ const uint8_t MCP2515_CS = 10;             // THE MCP2515 chip select wire on pi
 const uint8_t MCP2515_INT = 3;             // The MCP2515 Interrupt wire to pin 3
 const unsigned long RPM_SAMPLE_MS = 500UL; // long is used for timers because a width of 32 bits is sufficient
 const uint8_t PULSES_PER_REV = 1;          // number of pulses per revolution from the hall sensor, hardware dependent
+const uint8_t IN1 = 8;                     // Motor driver input pin 1
+const uint8_t IN2 = 9;                     // Motor driver input pin 2
 MCP_CAN CAN(MCP2515_CS);                   // mcp_can is the library class, where CAN is the object we created and named it CAN, the argument is simply what we defined early and is an address so the library knows where to find the MCP2515.(on pin 10)
 
 volatile unsigned long pulseCount = 0;    // this counts the number pulses from the hall sensor during the sample period
@@ -55,6 +57,17 @@ delay(10);               // Once MCP2515 begins it gives it a tiny pause to adju
 pinMode(MCP2515_INT, INPUT);                                           // sets the interrupt wire on mcp2515 to input and not input pull up because of two different power sources, the hall sensor is attached to arduino while mcp2515 is powered by the mcp which is set to high automatically and does not rely on the arduinos intermal resitor to be pulled up
 attachInterrupt(digitalPinToInterrupt(MCP2515_INT), MCP_ISR, FALLING); // attaches an interrupt to a pin , in this case mcp2515_INT pin , then digitalPinToInterrupt converts the pin number to an internal interrupt number because attachInterrupt expects an interrupt number not a raw pin.
 Serial.println(F("MCP2515 interrupt attached on D3"));                 // Message showing successful attachment of interupt to pin.
+
+//--- Motor driver setup ---
+pinMode(IN1, OUTPUT); // sets motor driver input pin 1 as output
+pinMode(IN2, OUTPUT); // sets motor driver input pin 2 as output
+
+// Spin motor forward at full speed
+digitalWrite(IN1, HIGH); // sets motor driver input pin 1 to high
+digitalWrite(IN2, LOW);  // sets motor driver input pin 2 to low
+
+// ENA should be HIGH  or jumper on board should be in place to enable motor driver
+Serial.println(F("Motor driver initialized, motor should spin forward."));
 
 lastSampleTime = millis();  // returns the number of milliseconds since the arduino started running and acts as reference point for calculating the elapsed time between rpm samples.
 lastPulseCountSnapshot = 0; // stores how many pulses have occured at the last check
