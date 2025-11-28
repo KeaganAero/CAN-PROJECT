@@ -13,6 +13,9 @@ MCP_CAN CAN(MCP2515_CS);                   // mcp_can is the library class, wher
 
 volatile unsigned long pulseCount = 0;    // this counts the number pulses from the hall sensor during the sample period
 volatile bool canMessageReceived = false; // flag to indicate  CAN message received, initially fasle and changes to true when interrupt occurs ie. a can message is received.
+const unsigned long interval = 1000;      // interval at which to blink (milliseconds)
+static unsigned long lastToggle = 0;      // last time the LED was toggled
+static bool LED_PIN_STATE = false;        // current state of the LED
 
 // Hall Sensor  ISR    //used for fast non blocking counting of pulses from the hall sensor
 
@@ -77,6 +80,44 @@ void loop()
 {
     unsigned long now = millis(); // stores the current time in milliseconds
 
+    //////// -------------------------------------------- LED BLINKING --------------------------------------------////////////////
+
+    // I will make an led blink on pin 13 at a rate of once per second to indicate that the code is running. I will use a non-blocking delay to achieve this so that the rest of the code can run while the led is blinking.
+
+    if (now - lastToggle >= interval)
+    {
+        lastToggle = now;
+        LED_PIN_STATE = !LED_PIN_STATE;
+        digitalWrite(LED_PIN, LED_PIN_STATE ? HIGH : LOW);
+    }
+
+    ////////////-------------------------------------------- BUTTON MOTOR CONTROL TOGGLE --------------------------------------------////////////////
+
+    // I now have a state variable called motor running, which is true when the motor is running and false when stopped, I will make the button a toggle switch to start and stop the motor. I will read the button state and if it is pressed and motor running is true, I will stop the motor and set motor running to false. If the button is pressed and motor running is false, I will start the motor and set motor running to true.
+
+    bool buttonState = digitalRead(BUTTON_PIN);
+
+    // detect button press (HIGH -> LOW)
+    if (buttonState == LOW && lastButtonState == HIGH)
+    {
+        // toggle motor
+        motorRunning = !motorRunning; // Flips the current state of the motor
+
+        if (motorRunning) // this is true when motor is running
+        {
+            digitalWrite(IN1, HIGH);
+            digitalWrite(IN2, LOW);
+            Serial.println("Motor ON");
+        }
+        else // this is true when motor is stopped
+        {
+            digitalWrite(IN1, LOW);
+            digitalWrite(IN2, LOW);
+            Serial.println("Motor OFF");
+        }
+    }
+
+    // Non-blocking RPM computation
     if (now - lastSampleTime >= RPM_SAMPLE_MS)
     {                                      // if this calculation is true then we  trigger the following line
         noInterrupts();                    // if the above is true then we turn off all interrupts to avoid updates of pulseCount mid read.
